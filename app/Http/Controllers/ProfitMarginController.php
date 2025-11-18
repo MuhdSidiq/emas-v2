@@ -12,7 +12,8 @@ class ProfitMarginController extends Controller
      */
     public function index()
     {
-        //
+
+        return view('harga-emas-staff');
     }
 
     /**

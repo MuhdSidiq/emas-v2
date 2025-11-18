@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Role extends Model
 {
@@ -12,6 +13,9 @@ class Role extends Model
         'description',
     ];
 
-
+public function user(): belongsTo
+{
+    return $this->belongsTo(User::class);
+}
 
 }

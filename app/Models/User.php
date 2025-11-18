@@ -47,9 +47,9 @@ class User extends Authenticatable
         ];
     }
 
-    public function role(): BelongsTo
+    public function role(): hasOne
     {
-        return $this->belongsTo(Role::class);
+        return $this->hasOne(Role::class);
     }
 
     public function profitMargin(): BelongsTo
