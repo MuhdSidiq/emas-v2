@@ -23,6 +23,244 @@
                 </p>
             </div>
 
+            <!-- Gold Prices -->
+            <div class="mb-6 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Live Gold Prices</h3>
+                </div>
+                <div class="p-6">
+                    @if(isset($goldPrices))
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-900">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Currency</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price / Gram</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">Staff Price (Profit)</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider">Agent Price (Profit)</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">USD</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${{ number_format($goldPrices['gram_USD'], 2) }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">-</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">-</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ \Carbon\Carbon::createFromTimestamp($goldPrices['timestamp'])->format('d M Y H:i:s') }}</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">MYR</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">RM{{ number_format($goldPrices['gram_MYR'], 2) }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 dark:text-blue-400">
+                                            <div class="font-semibold">RM{{ number_format($goldPrices['gram_MYR_staff'], 2) }}</div>
+                                            <div class="text-xs text-blue-500">(Profit: RM{{ number_format($goldPrices['profit_staff'], 2) }})</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400">
+                                            <div class="font-semibold">RM{{ number_format($goldPrices['gram_MYR_agent'], 2) }}</div>
+                                            <div class="text-xs text-green-500">(Profit: RM{{ number_format($goldPrices['profit_agent'], 2) }})</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ \Carbon\Carbon::createFromTimestamp($goldPrices['timestamp'])->format('d M Y H:i:s') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center text-red-500 dark:text-red-400">
+                            <p>Unable to fetch gold prices at the moment.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Historical Gold Prices -->
+            @if($historicalPrices && $historicalPrices->count() > 0)
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Gold Price Trend (Last 5 Days)</h3>
+                    <div class="mb-6">
+                        <canvas id="goldPriceChart" height="80"></canvas>
+                    </div>
+                    
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 mt-8">Historical Gold Prices (Last 5 Days)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-900">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price / Ounce (MYR)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price / Gram (MYR)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Change</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach($historicalPrices as $index => $price)
+                                    @php
+                                        $previousPrice = $historicalPrices[$index + 1] ?? null;
+                                        $change = $previousPrice ? $price->price_per_gram - $previousPrice->price_per_gram : 0;
+                                        $changePercent = $previousPrice && $previousPrice->price_per_gram > 0 
+                                            ? (($change / $previousPrice->price_per_gram) * 100) 
+                                            : 0;
+                                    @endphp
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                                            {{ $price->created_at->format('d M Y') }}
+                                            @if($price->created_at->isToday())
+                                                <span class="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">Today</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                            RM{{ number_format($price->price_per_troy_ounce, 2) }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                            RM{{ number_format($price->price_per_gram, 2) }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            @if($change > 0)
+                                                <span class="text-green-600 dark:text-green-400">
+                                                    ↑ RM{{ number_format($change, 2) }} ({{ number_format($changePercent, 2) }}%)
+                                                </span>
+                                            @elseif($change < 0)
+                                                <span class="text-red-600 dark:text-red-400">
+                                                    ↓ RM{{ number_format(abs($change), 2) }} ({{ number_format(abs($changePercent), 2) }}%)
+                                                </span>
+                                            @else
+                                                <span class="text-gray-500 dark:text-gray-400">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const ctx = document.getElementById('goldPriceChart').getContext('2d');
+                    
+                    // Prepare data from Laravel
+                    const historicalData = @json($historicalPrices->reverse()->values());
+                    
+                    const labels = historicalData.map(item => {
+                        const date = new Date(item.created_at);
+                        return date.toLocaleDateString('en-MY', { month: 'short', day: 'numeric' });
+                    });
+                    
+                    const pricesPerGram = historicalData.map(item => parseFloat(item.price_per_gram));
+                    const pricesPerOunce = historicalData.map(item => parseFloat(item.price_per_troy_ounce));
+                    
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Price per Gram (MYR)',
+                                    data: pricesPerGram,
+                                    borderColor: 'rgb(59, 130, 246)',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    tension: 0.3,
+                                    fill: true,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: 'Price per Ounce (MYR)',
+                                    data: pricesPerOunce,
+                                    borderColor: 'rgb(16, 185, 129)',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    tension: 0.3,
+                                    fill: true,
+                                    yAxisID: 'y1'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false,
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                    labels: {
+                                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151'
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) {
+                                                label += ': RM';
+                                            }
+                                            if (context.parsed.y !== null) {
+                                                label += context.parsed.y.toFixed(2);
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'left',
+                                    title: {
+                                        display: true,
+                                        text: 'Price per Gram (MYR)',
+                                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151'
+                                    },
+                                    ticks: {
+                                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151',
+                                        callback: function(value) {
+                                            return 'RM' + value.toFixed(2);
+                                        }
+                                    },
+                                    grid: {
+                                        color: document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'
+                                    }
+                                },
+                                y1: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'right',
+                                    title: {
+                                        display: true,
+                                        text: 'Price per Ounce (MYR)',
+                                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151'
+                                    },
+                                    ticks: {
+                                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151',
+                                        callback: function(value) {
+                                            return 'RM' + value.toFixed(0);
+                                        }
+                                    },
+                                    grid: {
+                                        drawOnChartArea: false,
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#374151'
+                                    },
+                                    grid: {
+                                        color: document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+            </script>
+            @endif
+
             <!-- Statistics Cards -->
             <div class="grid grid-cols-1 gap-6 mb-6 sm:grid-cols-2 lg:grid-cols-4">
                 <!-- Total Users -->

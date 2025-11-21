@@ -9,7 +9,7 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, \App\Services\MetalPriceService $metalPriceService): View
     {
         $user = $request->user()->load(['role', 'profitMargin']);
 
@@ -30,11 +30,19 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Get live gold prices (will store in DB if first request today)
+        $goldPrices = $metalPriceService->getGoldPrices();
+        
+        // Get historical prices for the last 5 days
+        $historicalPrices = $metalPriceService->getHistoricalPrices(5);
+
         return view('dashboard', [
             'user' => $user,
             'stats' => $stats,
             'recentUsers' => $recentUsers,
             'lowStockProducts' => $lowStockProducts,
+            'goldPrices' => $goldPrices,
+            'historicalPrices' => $historicalPrices,
         ]);
     }
 }
